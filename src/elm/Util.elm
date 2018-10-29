@@ -1,4 +1,4 @@
-module Util exposing (byteToSignedInt, chunkList, maybePredicate, stringToBytes, word16ToString, word8ToString)
+module Util exposing (boolToString, byteToSignedInt, chunkList, maybePredicate, stringToBytes, word16ToString, word8ToString)
 
 import Array exposing (Array)
 import Bitwise
@@ -13,6 +13,16 @@ word16ToString =
 word8ToString : Int -> String
 word8ToString =
     Hex.toString >> String.toUpper >> String.padLeft 2 '0' >> (++) "0x"
+
+
+boolToString : Bool -> String
+boolToString bool =
+    case bool of
+        True ->
+            "True"
+
+        False ->
+            "False"
 
 
 byteToSignedInt : Int -> Int

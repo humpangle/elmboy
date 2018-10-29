@@ -18,6 +18,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Model exposing (EmulationModel, ErrorModal, Model(..))
 import Msg exposing (Msg(..))
+import UI.Debugger as Debugger
 
 
 view : String -> String -> Model -> Html Msg
@@ -37,6 +38,7 @@ view canvasId fileInputId model =
                     div []
                         [ screen canvasId
                         , emulationToolbar emulationModel
+                        , Debugger.view emulationModel.gameBoy
                         ]
     in
     scaffolding leftContent projectDescription
