@@ -16,7 +16,7 @@ import Json.Decode as Decode
 import Model exposing (Model(..))
 import Msg exposing (Msg(..))
 import Ports
-import UI.KeyDecoder
+import UI.KeyDecoder exposing (KeyboardShortcut(..))
 import View
 
 
@@ -52,6 +52,10 @@ update msg model =
                 CloseErrorModal ->
                     ( Idle { idleModel | errorModal = Nothing }, Cmd.none )
 
+                Keyboard EnterDebugMode ->
+                    Debugger.init
+                        |> Tuple.mapBoth Debugging (Cmd.map DebuggerMsg)
+
                 _ ->
                     ( model, Cmd.none )
 
@@ -66,21 +70,15 @@ update msg model =
                     , Ports.setPixelsFromBatches { canvasId = canvasId, pixelBatches = GameBoyScreen.serializePixelBatches (PPU.getLastCompleteFrame gameBoy.ppu) }
                     )
 
-                ButtonDown (Just button) ->
+                ButtonDown button ->
                     ( Emulation { emulationModel | gameBoy = GameBoy.setButtonStatus button True emulationModel.gameBoy, frameTimes = emulationModel.frameTimes, paused = emulationModel.paused }
                     , Cmd.none
                     )
 
-                ButtonUp (Just button) ->
+                ButtonUp button ->
                     ( Emulation { emulationModel | gameBoy = GameBoy.setButtonStatus button False emulationModel.gameBoy, frameTimes = emulationModel.frameTimes, paused = emulationModel.paused }
                     , Cmd.none
                     )
-
-                ButtonDown Nothing ->
-                    ( model, Cmd.none )
-
-                ButtonUp Nothing ->
-                    ( model, Cmd.none )
 
                 Reset ->
                     ( Idle { errorModal = Nothing }, Cmd.none )
@@ -145,8 +143,9 @@ subscriptions model =
     in
     Sub.batch
         [ animationFrameSubscription
-        , Browser.Events.onKeyDown (Decode.map ButtonDown UI.KeyDecoder.decodeKey)
-        , Browser.Events.onKeyUp (Decode.map ButtonUp UI.KeyDecoder.decodeKey)
+        , Browser.Events.onKeyPress (Decode.map Keyboard UI.KeyDecoder.decodeKeyboardShortcut)
+        , Browser.Events.onKeyDown (Decode.map ButtonDown UI.KeyDecoder.decodeGameBoyButton)
+        , Browser.Events.onKeyUp (Decode.map ButtonUp UI.KeyDecoder.decodeGameBoyButton)
         , Ports.fileData FileDataReceived
         ]
 

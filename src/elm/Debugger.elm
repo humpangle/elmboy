@@ -1,4 +1,4 @@
-module Debugger exposing (Model, Msg, update, view)
+module Debugger exposing (Model, Msg, init, update, view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
@@ -7,6 +7,7 @@ import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Table as Table
 import Bootstrap.Utilities.Spacing as Spacing
 import Component.CPU exposing (CPU)
+import Component.Cartridge as Cartridge
 import Component.MMU as MMU
 import GameBoy exposing (GameBoy)
 import Html exposing (Html, abbr, div, h2, li, ol, span, text)
@@ -18,12 +19,17 @@ type alias Model =
     { breakpoints : List Int
     , watchpoints : List Int
     , watchRanges : List ( Int, Int )
-    , gameBoy : GameBoy
+    , gameBoy : Maybe GameBoy
     }
 
 
 type Msg
     = NoOp
+
+
+init : ( Model, Cmd Msg )
+init =
+    ( { breakpoints = [], watchpoints = [], watchRanges = [], gameBoy = Nothing }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -33,18 +39,23 @@ update msg model =
 
 view : Model -> Html msg
 view model =
-    div []
-        [ h2 [] [ text "Debugger" ]
-        , Button.button [ Button.outlineSecondary ] [ text "Trace" ]
-        , InputGroup.config
-            (InputGroup.text [ Input.placeholder "0x0000" ])
-            |> InputGroup.successors
-                [ InputGroup.button [ Button.secondary ] [ text "Run" ] ]
-            |> InputGroup.view
-        , viewRegisters model.gameBoy.cpu
-        , viewMisc model.gameBoy
-        , viewMemoryDebugger model.gameBoy
-        ]
+    case model.gameBoy of
+        Just gameBoy ->
+            div []
+                [ h2 [] [ text "Debugger" ]
+                , Button.button [ Button.outlineSecondary ] [ text "Trace" ]
+                , InputGroup.config
+                    (InputGroup.text [ Input.placeholder "0x0000" ])
+                    |> InputGroup.successors
+                        [ InputGroup.button [ Button.secondary ] [ text "Run" ] ]
+                    |> InputGroup.view
+                , viewRegisters gameBoy.cpu
+                , viewMisc gameBoy
+                , viewMemoryDebugger gameBoy
+                ]
+
+        Nothing ->
+            div [] [ text "We need a gameBoy!" ]
 
 
 viewRegisters : CPU -> Html msg

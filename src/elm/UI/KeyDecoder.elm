@@ -1,16 +1,41 @@
-module UI.KeyDecoder exposing (decodeKey)
+module UI.KeyDecoder exposing (KeyboardShortcut(..), decodeGameBoyButton, decodeKeyboardShortcut)
 
 import Component.Joypad exposing (GameBoyButton(..))
 import Json.Decode as Decode
 
 
-decodeKey : Decode.Decoder (Maybe GameBoyButton)
-decodeKey =
-    Decode.map mapKey (Decode.field "key" Decode.string)
+type KeyboardShortcut
+    = EnterDebugMode
 
 
-mapKey : String -> Maybe GameBoyButton
-mapKey string =
+decodeGameBoyButton : Decode.Decoder GameBoyButton
+decodeGameBoyButton =
+    Decode.field "key" Decode.string
+        |> Decode.andThen (mapGameBoyButton >> Maybe.map Decode.succeed >> Maybe.withDefault (Decode.fail "Not a GameBoyButton!"))
+
+
+decodeKeyboardShortcut : Decode.Decoder KeyboardShortcut
+decodeKeyboardShortcut =
+    Decode.map2
+        (\key ctrl ->
+            if ctrl && key == "d" then
+                Decode.succeed EnterDebugMode
+
+            else
+                Decode.fail "Not a KeyboardShortcut!"
+        )
+        (Decode.field "key" Decode.string)
+        (Decode.field "ctrlKey" Decode.bool)
+        |> Decode.andThen identity
+
+
+mapKeyboardShortcut : String -> Maybe KeyboardShortcut
+mapKeyboardShortcut s =
+    Nothing
+
+
+mapGameBoyButton : String -> Maybe GameBoyButton
+mapGameBoyButton string =
     case string of
         "ArrowLeft" ->
             Just Left
