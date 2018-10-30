@@ -1,4 +1,4 @@
-module UI.Debugger exposing (view)
+module Debugger exposing (Model, Msg, update, view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
@@ -14,12 +14,25 @@ import Html.Attributes exposing (placeholder, style)
 import Util
 
 
-type alias DebuggerState =
-    {}
+type alias Model =
+    { breakpoints : List Int
+    , watchpoints : List Int
+    , watchRanges : List ( Int, Int )
+    , gameBoy : GameBoy
+    }
 
 
-view : GameBoy -> Html msg
-view gameBoy =
+type Msg
+    = NoOp
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    ( model, Cmd.none )
+
+
+view : Model -> Html msg
+view model =
     div []
         [ h2 [] [ text "Debugger" ]
         , Button.button [ Button.outlineSecondary ] [ text "Trace" ]
@@ -28,9 +41,9 @@ view gameBoy =
             |> InputGroup.successors
                 [ InputGroup.button [ Button.secondary ] [ text "Run" ] ]
             |> InputGroup.view
-        , viewRegisters gameBoy.cpu
-        , viewMisc gameBoy
-        , viewMemoryDebugger gameBoy
+        , viewRegisters model.gameBoy.cpu
+        , viewMisc model.gameBoy
+        , viewMemoryDebugger model.gameBoy
         ]
 
 

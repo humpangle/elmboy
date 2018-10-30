@@ -2,6 +2,7 @@ module Msg exposing (Msg(..))
 
 import Array exposing (Array)
 import Component.Joypad exposing (GameBoyButton)
+import Debugger
 
 
 type Msg
@@ -14,3 +15,4 @@ type Msg
     | Pause
     | Resume
     | CloseErrorModal
+    | DebuggerMsg Debugger.Msg

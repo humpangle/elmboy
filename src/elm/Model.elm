@@ -1,12 +1,14 @@
 module Model exposing (EmulationModel, ErrorModal, Model(..))
 
 import Bootstrap.Modal as Modal
+import Debugger
 import GameBoy exposing (GameBoy)
 
 
 type Model
     = Idle IdleModel
     | Emulation EmulationModel
+    | Debugging Debugger.Model
 
 
 type alias ErrorModal =

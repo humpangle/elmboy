@@ -8,6 +8,7 @@ import Component.Cartridge as Cartridge
 import Component.Joypad exposing (GameBoyButton(..))
 import Component.PPU as PPU
 import Component.PPU.GameBoyScreen as GameBoyScreen
+import Debugger
 import Emulator
 import GameBoy exposing (GameBoy)
 import Html exposing (Html)
@@ -93,15 +94,38 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        Debugging debuggerModel ->
+            case msg of
+                DebuggerMsg debuggerMsg ->
+                    Debugger.update debuggerMsg debuggerModel
+                        |> Tuple.mapBoth Debugging (Cmd.map DebuggerMsg)
+
+                _ ->
+                    ( model, Cmd.none )
+
 
 main : Program () Model Msg
 main =
     Browser.element
-        { view = View.view canvasId fileInputId
+        { view = view
         , init = init
         , update = update
         , subscriptions = subscriptions
         }
+
+
+view : Model -> Html Msg
+view model =
+    case model of
+        Idle _ ->
+            View.view canvasId fileInputId model
+
+        Emulation _ ->
+            View.view canvasId fileInputId model
+
+        Debugging debuggingModel ->
+            Debugger.view debuggingModel
+                |> Html.map DebuggerMsg
 
 
 subscriptions : Model -> Sub Msg
