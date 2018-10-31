@@ -129,8 +129,12 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     let
-        animationFrameSubscription =
+        modelBasedSub =
             case model of
+                Debugging debuggerModel ->
+                    Debugger.subscriptions debuggerModel
+                        |> Sub.map DebuggerMsg
+
                 Emulation emulationModel ->
                     if not emulationModel.paused then
                         Browser.Events.onAnimationFrameDelta AnimationFrameDelta
@@ -142,7 +146,7 @@ subscriptions model =
                     Sub.none
     in
     Sub.batch
-        [ animationFrameSubscription
+        [ modelBasedSub
         , Browser.Events.onKeyPress (Decode.map Keyboard UI.KeyDecoder.decodeKeyboardShortcut)
         , Browser.Events.onKeyDown (Decode.map ButtonDown UI.KeyDecoder.decodeGameBoyButton)
         , Browser.Events.onKeyUp (Decode.map ButtonUp UI.KeyDecoder.decodeGameBoyButton)

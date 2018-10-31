@@ -1,17 +1,21 @@
-module Debugger exposing (Model, Msg, init, update, view)
+module Debugger exposing (Model, Msg, init, subscriptions, update, view)
 
+import Array exposing (Array)
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
+import Bootstrap.Grid as Grid
 import Bootstrap.Table as Table
 import Bootstrap.Utilities.Spacing as Spacing
 import Component.CPU exposing (CPU)
 import Component.Cartridge as Cartridge
 import Component.MMU as MMU
 import GameBoy exposing (GameBoy)
-import Html exposing (Html, abbr, div, h2, li, ol, span, text)
-import Html.Attributes exposing (placeholder, style)
+import Html exposing (Html, abbr, canvas, div, h1, h2, input, li, ol, small, span, text)
+import Html.Attributes exposing (class, height, id, placeholder, style, type_, width)
+import Html.Events exposing (onInput)
+import Ports
 import Util
 
 
@@ -20,42 +24,58 @@ type alias Model =
     , watchpoints : List Int
     , watchRanges : List ( Int, Int )
     , gameBoy : Maybe GameBoy
+    , autoRun : Bool
     }
 
 
 type Msg
-    = NoOp
+    = RomFileSelected
+    | RomFileLoaded (Array Int)
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { breakpoints = [], watchpoints = [], watchRanges = [], gameBoy = Nothing }, Cmd.none )
+    ( { breakpoints = [], watchpoints = [], watchRanges = [], gameBoy = Nothing, autoRun = False }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        RomFileSelected ->
+            ( model, Ports.requestFileData "romFileInput" )
+
+        RomFileLoaded rom ->
+            ( { model | gameBoy = Cartridge.fromBytes rom |> Maybe.map GameBoy.init }, Cmd.none )
 
 
-view : Model -> Html msg
+view : Model -> Html Msg
 view model =
-    case model.gameBoy of
-        Just gameBoy ->
-            div []
-                [ h2 [] [ text "Debugger" ]
-                , Button.button [ Button.outlineSecondary ] [ text "Trace" ]
-                , InputGroup.config
-                    (InputGroup.text [ Input.placeholder "0x0000" ])
-                    |> InputGroup.successors
-                        [ InputGroup.button [ Button.secondary ] [ text "Run" ] ]
-                    |> InputGroup.view
-                , viewRegisters gameBoy.cpu
-                , viewMisc gameBoy
-                , viewMemoryDebugger gameBoy
-                ]
+    let
+        content =
+            case model.gameBoy of
+                Just gameBoy ->
+                    div []
+                        [ canvas [ width 160, height 144, id "screen" ] []
+                        , Button.button [ Button.outlineSecondary ] [ text "Trace" ]
+                        , InputGroup.config
+                            (InputGroup.text [ Input.placeholder "0x0000" ])
+                            |> InputGroup.successors
+                                [ InputGroup.button [ Button.secondary ] [ text "Run" ] ]
+                            |> InputGroup.view
+                        , viewRegisters gameBoy.cpu
+                        , viewMisc gameBoy
+                        , viewMemoryDebugger gameBoy
+                        ]
 
-        Nothing ->
-            div [] [ text "We need a gameBoy!" ]
+                Nothing ->
+                    div [] [ input [ type_ "file", id "romFileInput", onInput (\_ -> RomFileSelected) ] [ text "Select a ROM" ] ]
+    in
+    Grid.containerFluid [] [ h1 [] [ text "Elmboy", small [ class "text-muted" ] [ text " Debugger" ] ], content ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Ports.fileData RomFileLoaded
 
 
 viewRegisters : CPU -> Html msg
