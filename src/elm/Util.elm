@@ -1,7 +1,8 @@
-module Util exposing (boolToString, byteToSignedInt, chunkList, maybePredicate, stringToBytes, word16ToString, word8ToString)
+module Util exposing (boolToString, byteToSignedInt, chunkList, conditionalOrBitmask, foldRIndexes, maybePredicate, stringToBytes, word16ToString, word8ToString)
 
 import Array exposing (Array)
 import Bitwise
+import Constants
 import Hex
 
 
@@ -31,7 +32,7 @@ byteToSignedInt value =
         sanitizedByte =
             Bitwise.and 0xFF value
     in
-    if Bitwise.and 0x80 sanitizedByte == 0x80 then
+    if Bitwise.and Constants.bit7Mask sanitizedByte == Constants.bit7Mask then
         negate (Bitwise.and 0xFF (Bitwise.complement sanitizedByte) + 1)
 
     else
@@ -74,3 +75,21 @@ stringToBytes string =
                 acc
     in
     recurse string Array.empty
+
+
+conditionalOrBitmask : Bool -> Int -> Int
+conditionalOrBitmask condition mask =
+    if condition then
+        mask
+
+    else
+        0x00
+
+
+foldRIndexes : Int -> acc -> (Int -> acc -> acc) -> acc
+foldRIndexes remaining acc f =
+    if remaining == 0 then
+        acc
+
+    else
+        foldRIndexes (remaining - 1) (f (remaining - 1) acc) f

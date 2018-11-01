@@ -5,10 +5,11 @@ import Bitwise
 import Component.PPU.Constants exposing (..)
 import Component.PPU.GameBoyScreen as GameBoyScreen exposing (GameBoyScreen)
 import Component.PPU.LineBuffer as LineBuffer exposing (LineBuffer)
-import Component.PPU.OAM as OAM exposing (foldRIndexes)
+import Component.PPU.OAM as OAM
 import Component.PPU.Pixel as Pixel exposing (PixelSource(..), RawPixel)
 import Component.PPU.Types exposing (Mode, PPU)
 import Component.RAM as RAM exposing (RAM)
+import Constants
 import Types exposing (MemoryAddress)
 import Util
 
@@ -17,7 +18,7 @@ drawLine : Int -> PPU -> PPU
 drawLine screenY ({ backgroundPalette, objectPalette0, objectPalette1, screen, scrollY, scrollX, windowX, windowY, objects, lcdc, vram } as ppu) =
     let
         objectHeight =
-            if Bitwise.and 0x04 lcdc == 0x04 then
+            if Bitwise.and Constants.bit2Mask lcdc == Constants.bit2Mask then
                 16
 
             else
@@ -55,7 +56,7 @@ backgroundPixels mapY mapX pixelAmount lcdc mapAddress vram =
             (pixelAmount // tileWidth) + 1
 
         pixels =
-            foldRIndexes tileAmount [] <|
+            Util.foldRIndexes tileAmount [] <|
                 \index acc ->
                     let
                         -- If we run out of tiles on the right, we just start at the beginning of the line again, instead of
@@ -84,21 +85,21 @@ viewportBackgroundLinePixels screenY scrollY scrollX windowX windowY lcdc vram =
     let
         -- LCDC Data extraction
         backgroundMapMemoryOffset =
-            if Bitwise.and 0x08 lcdc == 0x08 then
+            if Bitwise.and Constants.bit3Mask lcdc == Constants.bit3Mask then
                 0x1C00
 
             else
                 0x1800
 
         windowMapMemoryOffset =
-            if Bitwise.and 0x40 lcdc == 0x40 then
+            if Bitwise.and Constants.bit6Mask lcdc == Constants.bit6Mask then
                 0x1C00
 
             else
                 0x1800
 
         windowEnabled =
-            Bitwise.and 0x20 lcdc == 0x20
+            Bitwise.and Constants.bit5Mask lcdc == Constants.bit5Mask
 
         windowInLine =
             windowEnabled && screenY >= windowY
@@ -121,11 +122,11 @@ viewportBackgroundLinePixels screenY scrollY scrollX windowX windowY lcdc vram =
                 windowScreenX
 
             else
-                160
+                screenWidth
 
         requiredWindowPixels =
             if windowInLine then
-                160 - windowScreenX
+                screenWidth - windowScreenX
 
             else
                 0
@@ -154,7 +155,7 @@ readTileLinePixels tileAddress lineNumber vram readReversed pixelSource =
         tileLineLowByte =
             RAM.readWord8 vram tileLineAddress
     in
-    foldRIndexes 8 [] <|
+    Util.foldRIndexes 8 [] <|
         \reversedIndex acc ->
             let
                 -- TODO: The order seems correct here, but we need to reverse it so that it looks right.
@@ -215,17 +216,17 @@ addObjectToLineBuffer screenY vram objectHeight buffer objectY objectX objectTil
             objectX - 8
 
         palette =
-            if Bitwise.and 0x10 objectFlags == 0x10 then
+            if Bitwise.and Constants.bit4Mask objectFlags == Constants.bit4Mask then
                 ObjectWithPalette1
 
             else
                 ObjectWithPalette0
 
         flipX =
-            Bitwise.and 0x20 objectFlags == 0x20
+            Bitwise.and Constants.bit5Mask objectFlags == Constants.bit5Mask
 
         flipY =
-            Bitwise.and 0x40 objectFlags == 0x40
+            Bitwise.and Constants.bit6Mask objectFlags == Constants.bit6Mask
 
         line =
             if flipY then
@@ -249,7 +250,7 @@ addObjectToLineBuffer screenY vram objectHeight buffer objectY objectX objectTil
 
 backgroundTileAddress : Int -> Int -> MemoryAddress
 backgroundTileAddress lcdc tileId =
-    if Bitwise.and 0x10 lcdc == 0x10 then
+    if Bitwise.and Constants.bit4Mask lcdc == Constants.bit4Mask then
         tileId * 16
 
     else

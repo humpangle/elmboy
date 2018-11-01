@@ -37,10 +37,11 @@ import Component.PPU.Constants exposing (..)
 import Component.PPU.GameBoyScreen as GameBoyScreen exposing (GameBoyScreen)
 import Component.PPU.LineBuffer as LineBuffer exposing (LineBuffer)
 import Component.PPU.LineDrawing as LineDrawing
-import Component.PPU.OAM exposing (foldRIndexes, searchVisibleObjects)
+import Component.PPU.OAM exposing (searchVisibleObjects)
 import Component.PPU.Pixel as Pixel exposing (..)
 import Component.PPU.Types as PPUTypes exposing (Mode(..), PPU, PPUInterrupt(..))
 import Component.RAM as RAM exposing (RAM)
+import Constants
 import Types exposing (MemoryAddress)
 import Util
 
@@ -278,13 +279,13 @@ emulate cycles ({ mode, cyclesSinceLastCompleteFrame, omitFrame } as ppu) =
             remainderBy cyclesPerLine lastEmulatedCycle
 
         hBlankInterruptEnabled =
-            Bitwise.and ppu.lcdStatus 0x08 == 0x08
-
-        lineCompareInterruptEnabled =
-            Bitwise.and ppu.lcdStatus 0x40 == 0x40
+            Bitwise.and ppu.lcdStatus Constants.bit3Mask == Constants.bit3Mask
 
         oamInterruptEnabled =
-            Bitwise.and ppu.lcdStatus 0x20 == 0x20
+            Bitwise.and ppu.lcdStatus Constants.bit5Mask == Constants.bit5Mask
+
+        lineCompareInterruptEnabled =
+            Bitwise.and ppu.lcdStatus Constants.bit6Mask == Constants.bit6Mask
 
         currentMode =
             if currentLine > (screenHeight + vBlankDurationInLines) then

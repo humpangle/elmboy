@@ -12,6 +12,7 @@ import Component.MMU as MMU
 import Component.PPU as PPU
 import Component.PPU.Types exposing (PPUInterrupt(..))
 import Component.Timer as Timer
+import Constants
 import CoreEffect exposing (..)
 import Effect exposing (..)
 import GameBoy exposing (GameBoy)
@@ -34,12 +35,12 @@ emulateNextInstruction gameBoy =
         updatedInterruptFlag =
             List.foldl Bitwise.or
                 emulatedGameBoy.cpu.interruptFlag
-                [ conditionalOrBitmask (ppu.triggeredInterrupt == Just VBlankInterrupt) 0x01
-                , conditionalOrBitmask (ppu.triggeredInterrupt == Just HBlankInterrupt) 0x02
-                , conditionalOrBitmask (ppu.triggeredInterrupt == Just LineCompareInterrupt) 0x02
-                , conditionalOrBitmask (ppu.triggeredInterrupt == Just OamInterrupt) 0x02
-                , conditionalOrBitmask timer.triggeredInterrupt 0x04
-                , conditionalOrBitmask emulatedGameBoy.joypad.triggeredInterrupt 0x10
+                [ Util.conditionalOrBitmask (ppu.triggeredInterrupt == Just VBlankInterrupt) 0x01
+                , Util.conditionalOrBitmask (ppu.triggeredInterrupt == Just HBlankInterrupt) 0x02
+                , Util.conditionalOrBitmask (ppu.triggeredInterrupt == Just LineCompareInterrupt) 0x02
+                , Util.conditionalOrBitmask (ppu.triggeredInterrupt == Just OamInterrupt) 0x02
+                , Util.conditionalOrBitmask timer.triggeredInterrupt 0x04
+                , Util.conditionalOrBitmask emulatedGameBoy.joypad.triggeredInterrupt 0x10
                 ]
 
         cpu =
@@ -108,25 +109,25 @@ handleNextInterrupt ({ cpu } as gameBoy) =
             Bitwise.and cpu.interruptFlag cpu.interruptEnable
     in
     if cpu.interruptMasterEnable && filteredInterruptFlags > 0x00 then
-        if Bitwise.and 0x01 filteredInterruptFlags == 0x01 then
+        if Bitwise.and Constants.bit0Mask filteredInterruptFlags == Constants.bit0Mask then
             -- VBlank
-            performInterrupt 0x40 (Bitwise.xor 0x01 cpu.interruptFlag) gameBoy
+            performInterrupt 0x40 (Bitwise.xor Constants.bit0Mask cpu.interruptFlag) gameBoy
 
-        else if Bitwise.and 0x02 filteredInterruptFlags == 0x02 then
+        else if Bitwise.and Constants.bit1Mask filteredInterruptFlags == Constants.bit1Mask then
             -- LCD Status
-            performInterrupt 0x48 (Bitwise.xor 0x02 cpu.interruptFlag) gameBoy
+            performInterrupt 0x48 (Bitwise.xor Constants.bit1Mask cpu.interruptFlag) gameBoy
 
-        else if Bitwise.and 0x04 filteredInterruptFlags == 0x04 then
+        else if Bitwise.and Constants.bit2Mask filteredInterruptFlags == Constants.bit2Mask then
             -- Timer Overflow
-            performInterrupt 0x50 (Bitwise.xor 0x04 cpu.interruptFlag) gameBoy
+            performInterrupt 0x50 (Bitwise.xor Constants.bit2Mask cpu.interruptFlag) gameBoy
 
-        else if Bitwise.and 0x08 filteredInterruptFlags == 0x08 then
+        else if Bitwise.and Constants.bit3Mask filteredInterruptFlags == Constants.bit3Mask then
             -- Serial
-            performInterrupt 0x58 (Bitwise.xor 0x08 cpu.interruptFlag) gameBoy
+            performInterrupt 0x58 (Bitwise.xor Constants.bit3Mask cpu.interruptFlag) gameBoy
 
-        else if Bitwise.and 0x10 filteredInterruptFlags == 0x10 then
+        else if Bitwise.and Constants.bit4Mask filteredInterruptFlags == Constants.bit4Mask then
             -- Joypad Press
-            performInterrupt 0x60 (Bitwise.xor 0x10 cpu.interruptFlag) gameBoy
+            performInterrupt 0x60 (Bitwise.xor Constants.bit4Mask cpu.interruptFlag) gameBoy
 
         else
             gameBoy
@@ -141,12 +142,3 @@ performInterrupt interruptServiceRoutineAddress modifiedInterruptFlag gameBoy =
         |> GameBoy.setCPU (CPU.setInterruptData False modifiedInterruptFlag False gameBoy.cpu)
         |> Opcode.push (readRegister16 PC)
         |> writeRegister16 PC interruptServiceRoutineAddress
-
-
-conditionalOrBitmask : Bool -> Int -> Int
-conditionalOrBitmask condition mask =
-    if condition then
-        mask
-
-    else
-        0x00
